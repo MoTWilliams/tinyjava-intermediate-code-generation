@@ -11,6 +11,4 @@
 # Build artifacts 
 *.class
 
-# Test files
-tests/
 
