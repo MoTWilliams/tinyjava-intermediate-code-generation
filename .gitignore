@@ -1,0 +1,16 @@
+# Don't push local enviroment files for individual projects
+*.jar
+.vscode/
+
+# Don't ignore root environment files or those in NewProjectFiles/
+!/.vscode/
+!/*.jar
+!/NewProjectFiles/.vscode/
+!/NewProjectFiles/*.jar
+
+# Build artifacts 
+*.class
+
+# Test files
+tests/
+
