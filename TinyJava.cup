@@ -1,0 +1,285 @@
+import java_cup.runtime.*;
+import java.util.*;
+
+action code {:
+    SymbolTable env = new SymbolTable();
+    Stack<SymbolTable> envStack = new Stack<>();
+:};
+
+/* Names and literals */
+terminal String ID, INTEGER;
+
+/* Punctuation and operator symbols */
+terminal SEMICOLON, COMMA, DOT, ASSIGN;
+terminal LBRACE, RBRACE, LPAREN, RPAREN, LBRACKET, RBRACKET;
+terminal EQ, NE, LE, LT, GE, GT;
+terminal PLUS, MINUS, NOT, STAR, SLASH, OR, AND;
+
+/* Keywords */
+terminal BOOLEAN, NEXTINT, PRINTLN, SCANNER, IMPORT, PUBLIC, RETURN, STATIC;
+terminal STRING, SYSTEM, CLASS, FALSE, WHILE, ARGS, ELSE, JAVA, MAIN, THIS;
+terminal TRUE, UTIL, VOID, INT, NEW, OUT, IF, IN;
+
+non terminal SymbolTable program;
+non terminal classDefinitionList;
+non terminal classDefinition;
+non terminal classBody;
+non terminal memberList;
+non terminal memberDeclaration;
+non terminal memberDeclarator;
+non terminal Boolean isStatic;
+non terminal VariableEntry variableDeclaration;
+non terminal Integer arrayDimensions;
+non terminal List<Integer> arraySizes;
+non terminal String type;
+non terminal functionDefinition;
+non terminal functionDeclaration;
+non terminal argumentDeclarationListOpt;
+non terminal argumentDeclarationList;
+non terminal argumentDeclaration;
+non terminal mainDeclaration;
+non terminal functionBody;
+non terminal variableDeclarationList;
+non terminal statementListOpt;
+non terminal statementList;
+non terminal statement;
+non terminal otherStatement;
+non terminal matchedStatement;
+non terminal openStatement;
+non terminal compoundStatement;
+non terminal assignmentStatement;
+non terminal variable;
+non terminal object;
+non terminal functionCall;
+non terminal parameters;
+non terminal expressionList;
+non terminal expression;
+non terminal andExpression;
+non terminal relationalExpression;
+non terminal arithmeticExpression;
+non terminal term;
+non terminal factor;
+non terminal primaryExpression;
+non terminal unaryOperator;
+non terminal multiplyOperator;
+non terminal addOperator;
+non terminal comparisonOpt;
+non terminal relationalOperator;
+non terminal arrayPositionOpt;
+non terminal arrayPosition;
+non terminal assignedValue;
+non terminal printStatement;
+non terminal returnStatementOpt;
+
+
+start with program;
+
+program ::= IMPORT JAVA DOT UTIL DOT STAR SEMICOLON classDefinitionList
+    {: RESULT = env; :} ;
+
+classDefinitionList ::= classDefinition | classDefinitionList classDefinition ;
+
+classDefinition ::= 
+    CLASS ID:id  
+    {:
+        SymbolTable classEnv = new SymbolTable(id, env);
+
+        // Push env in preparation to make new scope
+        envStack.push(env);
+        
+        // Enter new scope if class declaration successful
+        if(env.AddClass(id, classEnv)) env = classEnv;
+
+        // Otherwise, enter a dummy env to discard the class body
+        else env = new SymbolTable("<invalid class>", env);
+    :} 
+    LBRACE classBody RBRACE
+    {:
+        env = envStack.pop();
+    :} ;
+
+classBody ::= memberList | ;
+
+memberList ::= memberDeclaration | memberList memberDeclaration ;
+
+memberDeclaration ::= memberDeclarator | functionDefinition ;
+
+memberDeclarator ::= 
+    isStatic:stat variableDeclaration:d 
+    {: if(d != null && stat) d.MarkStatic(); :} ;
+
+variableDeclaration ::= 
+    type:t ID:id SEMICOLON 
+    {: 
+        if (!env.AddVar(id, t)) RESULT = null;
+        else RESULT = (VariableEntry) env.Entry(id);
+    :}
+    | type:tL ID:id arrayDimensions:dims
+                                ASSIGN NEW type:tR arraySizes:sizes SEMICOLON 
+    {:
+        if (!VariableEntry.IsValidArray(tL,tR,dims,sizes) 
+                                    || !env.AddVar(id,tL,dims,sizes)) 
+            RESULT = null;
+        else RESULT = (VariableEntry) env.Entry(id);
+    :} ;
+
+isStatic ::= STATIC {: RESULT = true; :} | {: RESULT = false; :} ;
+
+arrayDimensions ::= LBRACKET RBRACKET {: RESULT = 1; :} 
+    | arrayDimensions:dims LBRACKET RBRACKET {: RESULT = dims + 1; :} ;
+
+arraySizes ::= LBRACKET INTEGER:size RBRACKET 
+    {:
+        // BASE CASE: Create the list and initialize with size of the array's 
+        // first dimension 
+        List<Integer> newSizesList = new ArrayList<>();
+        newSizesList.add(Integer.parseInt(size));
+        RESULT = newSizesList;
+    :}
+    | arraySizes:sizes LBRACKET INTEGER:size RBRACKET
+    {:
+        // RECURSIVE CASE: Add the next dimension's size to the existing list
+        sizes.add(Integer.parseInt(size));
+        RESULT = sizes;
+    :} ;
+
+type ::= ID:id {: RESULT = id; :} | INT {: RESULT = "int"; :}
+    | BOOLEAN {: RESULT = "boolean"; :} ;
+
+functionDefinition ::=
+    functionDeclaration LBRACE functionBody RBRACE 
+    {: env = envStack.pop(); :} ;
+
+functionDeclaration ::= 
+    PUBLIC isStatic:stat type:t ID:id 
+    {:
+        SymbolTable funcEnv = new SymbolTable(id, env);
+        
+        // Push env in preparation to make new scope
+        envStack.push(env);
+        
+        // Enter new scope if function declaration successful
+        if(env.AddFunc(id, t, stat, funcEnv)) env = funcEnv;
+
+        // Otherwise, enter a dummy env to discard the class body
+        else env = new SymbolTable("<invalid function>", env);
+    :}
+    LPAREN argumentDeclarationListOpt RPAREN 
+    | mainDeclaration
+    {:
+        SymbolTable mainFuncEnv = new SymbolTable("main", env);
+        
+        // Push env in preparation to make new scope
+        envStack.push(env);
+        
+        // Enter new scope if function declaration successful
+        if(env.AddFunc("main", "void", true, mainFuncEnv)) env = mainFuncEnv;
+
+        // Otherwise, enter a dummy env to discard the class body
+        else env = new SymbolTable("<invalid function>", env);
+    :} ;
+
+argumentDeclarationListOpt ::= argumentDeclarationList | ;
+
+argumentDeclarationList ::= argumentDeclaration
+    | argumentDeclarationList COMMA argumentDeclaration ;
+
+argumentDeclaration ::= 
+    type:t ID:id 
+    {:
+        if (env.AddVar(id, t)) 
+        {
+            String typeString = env.Entry(id).TypeString();
+            ((FunctionEntry)env.ThisEntry()).AddArgType(typeString);
+        }
+    :}
+    | type:t ID:id arrayDimensions:dims 
+    {:
+        if (env.AddVar(id, t, dims))
+        {
+            String typeString = env.Entry(id).TypeString();
+            ((FunctionEntry)env.ThisEntry()).AddArgType(typeString);
+        }
+    :} ;
+
+mainDeclaration ::= 
+    PUBLIC STATIC VOID MAIN LPAREN STRING ARGS LBRACKET RBRACKET RPAREN
+    | STATIC SCANNER IN ASSIGN NEW SCANNER LPAREN SYSTEM DOT IN RPAREN SEMICOLON
+    PUBLIC STATIC VOID MAIN LPAREN STRING ARGS LBRACKET RBRACKET RPAREN ;
+
+functionBody ::= statementListOpt returnStatementOpt
+    | variableDeclarationList statementListOpt returnStatementOpt ;
+
+variableDeclarationList ::= variableDeclaration
+    | variableDeclarationList variableDeclaration ;
+
+statementListOpt ::= statementList | ;
+
+statementList ::= statement | statementList statement ;
+
+statement ::= matchedStatement | openStatement ;
+
+otherStatement ::= compoundStatement | assignmentStatement | printStatement ;
+
+matchedStatement ::= 
+    IF LPAREN expression RPAREN matchedStatement ELSE matchedStatement
+    | WHILE LPAREN expression RPAREN matchedStatement
+    | otherStatement ;
+
+openStatement ::= IF LPAREN expression RPAREN statement
+    | IF LPAREN expression RPAREN matchedStatement ELSE openStatement
+    | WHILE LPAREN expression RPAREN openStatement ;
+
+compoundStatement ::= LBRACE statementList RBRACE ;
+
+assignmentStatement ::= variable ASSIGN assignedValue SEMICOLON ;
+
+variable ::= THIS | ID arrayPositionOpt
+    | object DOT ID arrayPositionOpt ;
+
+object ::= variable | functionCall ;
+
+functionCall ::= ID LPAREN parameters RPAREN 
+    | object DOT ID LPAREN parameters RPAREN ;
+
+parameters ::= expressionList | ;
+
+expressionList ::= expression | expressionList COMMA expression ;
+
+expression ::= andExpression | expression OR andExpression ;
+
+andExpression ::= relationalExpression | andExpression AND relationalExpression;
+
+relationalExpression ::= arithmeticExpression comparisonOpt ;
+
+arithmeticExpression ::= term | arithmeticExpression addOperator term ;
+
+term ::= factor | term multiplyOperator factor ;
+
+factor ::= primaryExpression | unaryOperator factor ;
+
+primaryExpression ::= object | INTEGER | TRUE | FALSE 
+    | LPAREN expression RPAREN ;
+
+unaryOperator ::= addOperator | NOT ;
+
+multiplyOperator ::= STAR | SLASH ;
+
+addOperator ::= PLUS | MINUS ;
+
+comparisonOpt ::= relationalOperator arithmeticExpression | ;
+
+relationalOperator ::= LT | LE | GT | GE | EQ | NE ;
+
+arrayPositionOpt ::= arrayPosition | ;
+
+arrayPosition ::= LBRACKET expression RBRACKET
+    | arrayPosition LBRACKET expression RBRACKET ;
+
+assignedValue ::= expression | NEW ID LPAREN RPAREN 
+    | IN DOT NEXTINT LPAREN RPAREN ;
+
+printStatement ::=
+    SYSTEM DOT OUT DOT PRINTLN LPAREN expression RPAREN SEMICOLON ;
+
+returnStatementOpt ::= RETURN expression SEMICOLON | ;
