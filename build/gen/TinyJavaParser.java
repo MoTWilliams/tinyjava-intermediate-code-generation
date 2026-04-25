@@ -497,6 +497,7 @@ class CUP$TinyJavaParser$actions {
 
     SymbolTable env = new SymbolTable();
     Stack<SymbolTable> envStack = new Stack<>();
+    int indents = 0;
 
   private final TinyJavaParser parser;
 
@@ -537,7 +538,16 @@ class CUP$TinyJavaParser$actions {
           case 1: // program ::= IMPORT JAVA DOT UTIL DOT STAR SEMICOLON classDefinitionList 
             {
               Code RESULT =null;
-		 RESULT = new Code(env, "// Intermediate code"); 
+		int classesleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).left;
+		int classesright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).right;
+		List<String> classes = (List<String>)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.peek()).value;
+		
+        String code = "";
+
+        for (String classDef : classes) code += classDef;
+
+        RESULT = new Code(env, code);
+    
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("program",0, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-7)), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
             }
           return CUP$TinyJavaParser$result;
@@ -545,8 +555,15 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 2: // classDefinitionList ::= classDefinition 
             {
-              Object RESULT =null;
-
+              List<String> RESULT =null;
+		int classDefleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).left;
+		int classDefright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).right;
+		String classDef = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.peek()).value;
+		
+        List<String> newClassesList = new ArrayList<>();
+        newClassesList.add(classDef);
+        RESULT = newClassesList;
+    
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("classDefinitionList",1, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
             }
           return CUP$TinyJavaParser$result;
@@ -554,8 +571,17 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 3: // classDefinitionList ::= classDefinitionList classDefinition 
             {
-              Object RESULT =null;
-
+              List<String> RESULT =null;
+		int classesleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).left;
+		int classesright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).right;
+		List<String> classes = (List<String>)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).value;
+		int classDefleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).left;
+		int classDefright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).right;
+		String classDef = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.peek()).value;
+		
+        classes.add(classDef);
+        RESULT = classes;
+    
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("classDefinitionList",1, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
             }
           return CUP$TinyJavaParser$result;
@@ -563,7 +589,7 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 4: // NT$0 ::= 
             {
-              Object RESULT =null;
+              String RESULT =null;
 		int idleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).left;
 		int idright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).right;
 		String id = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.peek()).value;
@@ -574,7 +600,8 @@ class CUP$TinyJavaParser$actions {
         envStack.push(env);
         
         // Enter new scope if class declaration successful
-        if(env.AddClass(id, classEnv)) env = classEnv;
+        if(env.AddClass(id, classEnv))
+            env = classEnv;
 
         // Otherwise, enter a dummy env to discard the class body
         else env = new SymbolTable("<invalid class>", env);
@@ -586,13 +613,17 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 5: // classDefinition ::= CLASS ID NT$0 LBRACE classBody RBRACE 
             {
-              Object RESULT =null;
+              String RESULT =null;
               // propagate RESULT from NT$0
-                RESULT = (Object) ((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-3)).value;
+                RESULT = (String) ((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-3)).value;
 		int idleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-4)).left;
 		int idright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-4)).right;
 		String id = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-4)).value;
+		int classMemsleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).left;
+		int classMemsright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).right;
+		String classMems = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).value;
 		
+        RESULT = classMems + "";    
         env = envStack.pop();
     
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("classDefinition",2, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-5)), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
@@ -602,8 +633,21 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 6: // classBody ::= memberList 
             {
-              Object RESULT =null;
+              String RESULT =null;
+		int memsleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).left;
+		int memsright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).right;
+		List<String> mems = (List<String>)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.peek()).value;
+		
+        String code = "";
 
+        for (int i = 0; i < mems.size(); i++)
+        {
+            if (i > 0) code += "\n";
+            code += mems.get(i);
+        }
+
+        RESULT = code;
+    
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("classBody",3, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
             }
           return CUP$TinyJavaParser$result;
@@ -611,8 +655,8 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 7: // classBody ::= 
             {
-              Object RESULT =null;
-
+              String RESULT =null;
+		 RESULT = ""; 
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("classBody",3, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
             }
           return CUP$TinyJavaParser$result;
@@ -620,8 +664,15 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 8: // memberList ::= memberDeclaration 
             {
-              Object RESULT =null;
-
+              List<String> RESULT =null;
+		int memleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).left;
+		int memright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).right;
+		String mem = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.peek()).value;
+		
+        List<String> newMemsList = new ArrayList<>();
+        newMemsList.add(mem);
+        RESULT = newMemsList;
+    
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("memberList",4, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
             }
           return CUP$TinyJavaParser$result;
@@ -629,8 +680,17 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 9: // memberList ::= memberList memberDeclaration 
             {
-              Object RESULT =null;
-
+              List<String> RESULT =null;
+		int memsleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).left;
+		int memsright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).right;
+		List<String> mems = (List<String>)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).value;
+		int memleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).left;
+		int memright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).right;
+		String mem = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.peek()).value;
+		
+        mems.add(mem);
+        RESULT = mems;
+    
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("memberList",4, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
             }
           return CUP$TinyJavaParser$result;
@@ -638,8 +698,8 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 10: // memberDeclaration ::= memberDeclarator 
             {
-              Object RESULT =null;
-
+              String RESULT =null;
+		 RESULT = Code.Indent(indents) + "member\n"; 
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("memberDeclaration",5, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
             }
           return CUP$TinyJavaParser$result;
@@ -647,8 +707,20 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 11: // memberDeclaration ::= functionDefinition 
             {
-              Object RESULT =null;
+              String RESULT =null;
+		int funcCodeleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).left;
+		int funcCoderight = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).right;
+		String funcCode = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.peek()).value;
+		 
+        String code = "";
+        for (String line : funcCode.split("\\R")) // Any newline type
+        {
+            code += Code.Indent(indents) + line + "\n";
+        }
 
+        // Add code to indent each line as appropriate
+        RESULT = code;
+    
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("memberDeclaration",5, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
             }
           return CUP$TinyJavaParser$result;
@@ -656,7 +728,7 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 12: // memberDeclarator ::= isStatic variableDeclaration 
             {
-              Object RESULT =null;
+              VariableEntry RESULT =null;
 		int statleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).left;
 		int statright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).right;
 		Boolean stat = (Boolean)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).value;
@@ -824,8 +896,23 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 24: // functionDefinition ::= functionDeclaration LBRACE functionBody RBRACE 
             {
-              Object RESULT =null;
-		 env = envStack.pop(); 
+              String RESULT =null;
+		int funcSigCodeleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-3)).left;
+		int funcSigCoderight = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-3)).right;
+		String funcSigCode = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-3)).value;
+		
+        SymbolTableEntry e = env.ThisEntry();
+        String code = funcSigCode;
+
+        // Close bracket
+        if (e.ID().equals("main")) 
+            code += Code.Indent(indents) + "return 0;\n";
+        code += Code.Indent(--indents) + "}";
+
+        RESULT = code;
+        
+        env = envStack.pop();
+    
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("functionDefinition",12, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-3)), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
             }
           return CUP$TinyJavaParser$result;
@@ -833,7 +920,7 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 25: // NT$1 ::= 
             {
-              Object RESULT =null;
+              String RESULT =null;
 		int statleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-2)).left;
 		int statright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-2)).right;
 		Boolean stat = (Boolean)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-2)).value;
@@ -850,9 +937,10 @@ class CUP$TinyJavaParser$actions {
         envStack.push(env);
         
         // Enter new scope if function declaration successful
-        if(env.AddFunc(id, t, stat, funcEnv)) env = funcEnv;
-
-        // Otherwise, enter a dummy env to discard the class body
+        if(env.AddFunc(id, t, stat, funcEnv)) 
+            env = funcEnv;
+            
+        // Otherwise, enter a dummy env to discard the function body
         else env = new SymbolTable("<invalid function>", env);
     
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("NT$1",51, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
@@ -862,9 +950,9 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 26: // functionDeclaration ::= PUBLIC isStatic type ID NT$1 LPAREN argumentDeclarationListOpt RPAREN 
             {
-              Object RESULT =null;
+              String RESULT =null;
               // propagate RESULT from NT$1
-                RESULT = (Object) ((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-3)).value;
+                RESULT = (String) ((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-3)).value;
 		int statleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-6)).left;
 		int statright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-6)).right;
 		Boolean stat = (Boolean)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-6)).value;
@@ -874,7 +962,23 @@ class CUP$TinyJavaParser$actions {
 		int idleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-4)).left;
 		int idright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-4)).right;
 		String id = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-4)).value;
+		int argsleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).left;
+		int argsright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).right;
+		List<String> args = (List<String>)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).value;
+		
+        // Because of the dummy scope, this is just dumped on failed entry
+        SymbolTableEntry e = env.ThisEntry();
 
+        String code = Code.Indent(indents++) + e.Type() +" "+ e.ID() + "(";
+        for (int i = 0; i < args.size(); i++)
+        {
+            code += args.get(i);
+            if (i < args.size() - 1) code += ", ";
+        }
+        code += ") {\n";
+
+        RESULT = code;
+    
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("functionDeclaration",13, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-7)), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
             }
           return CUP$TinyJavaParser$result;
@@ -882,7 +986,7 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 27: // functionDeclaration ::= mainDeclaration 
             {
-              Object RESULT =null;
+              String RESULT =null;
 		
         SymbolTable mainFuncEnv = new SymbolTable("main", env);
         
@@ -890,10 +994,19 @@ class CUP$TinyJavaParser$actions {
         envStack.push(env);
         
         // Enter new scope if function declaration successful
-        if(env.AddFunc("main", "void", true, mainFuncEnv)) env = mainFuncEnv;
+        if(env.AddFunc("main", "void", true, mainFuncEnv))
+        {
+            env = mainFuncEnv;
+            RESULT = "int main() {\n";
+            indents++;
+        }
 
         // Otherwise, enter a dummy env to discard the class body
-        else env = new SymbolTable("<invalid function>", env);
+        else
+        {
+            env = new SymbolTable("<invalid function>", env);
+            RESULT = null;
+        }
     
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("functionDeclaration",13, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
             }
@@ -902,8 +1015,11 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 28: // argumentDeclarationListOpt ::= argumentDeclarationList 
             {
-              Object RESULT =null;
-
+              List<String> RESULT =null;
+		int argsleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).left;
+		int argsright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).right;
+		List<String> args = (List<String>)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.peek()).value;
+		 RESULT = args; 
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("argumentDeclarationListOpt",14, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
             }
           return CUP$TinyJavaParser$result;
@@ -911,8 +1027,8 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 29: // argumentDeclarationListOpt ::= 
             {
-              Object RESULT =null;
-
+              List<String> RESULT =null;
+		 RESULT = new ArrayList<>();
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("argumentDeclarationListOpt",14, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
             }
           return CUP$TinyJavaParser$result;
@@ -920,8 +1036,15 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 30: // argumentDeclarationList ::= argumentDeclaration 
             {
-              Object RESULT =null;
-
+              List<String> RESULT =null;
+		int argleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).left;
+		int argright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).right;
+		String arg = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.peek()).value;
+		
+        List<String> newArgsList = new ArrayList<>();
+        newArgsList.add(arg);
+        RESULT = newArgsList;
+    
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("argumentDeclarationList",15, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
             }
           return CUP$TinyJavaParser$result;
@@ -929,8 +1052,17 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 31: // argumentDeclarationList ::= argumentDeclarationList COMMA argumentDeclaration 
             {
-              Object RESULT =null;
-
+              List<String> RESULT =null;
+		int argsleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-2)).left;
+		int argsright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-2)).right;
+		List<String> args = (List<String>)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-2)).value;
+		int argleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).left;
+		int argright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).right;
+		String arg = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.peek()).value;
+		
+        args.add(arg);
+        RESULT = args;
+    
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("argumentDeclarationList",15, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-2)), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
             }
           return CUP$TinyJavaParser$result;
@@ -938,7 +1070,7 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 32: // argumentDeclaration ::= type ID 
             {
-              Object RESULT =null;
+              String RESULT =null;
 		int tleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).left;
 		int tright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).right;
 		String t = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).value;
@@ -948,8 +1080,10 @@ class CUP$TinyJavaParser$actions {
 		
         if (env.AddVar(id, t)) 
         {
-            String typeString = env.Entry(id).TypeString();
-            ((FunctionEntry)env.ThisEntry()).AddArgType(typeString);
+            SymbolTableEntry e = env.Entry(id);
+            ((FunctionEntry)env.ThisEntry()).AddArgType(e.TypeString());
+            
+            RESULT = e.Type() + " " + e.ID();
         }
     
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("argumentDeclaration",16, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
@@ -959,7 +1093,7 @@ class CUP$TinyJavaParser$actions {
           /*. . . . . . . . . . . . . . . . . . . .*/
           case 33: // argumentDeclaration ::= type ID arrayDimensions 
             {
-              Object RESULT =null;
+              String RESULT =null;
 		int tleft = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-2)).left;
 		int tright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-2)).right;
 		String t = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-2)).value;
@@ -972,8 +1106,12 @@ class CUP$TinyJavaParser$actions {
 		
         if (env.AddVar(id, t, dims))
         {
-            String typeString = env.Entry(id).TypeString();
-            ((FunctionEntry)env.ThisEntry()).AddArgType(typeString);
+            SymbolTableEntry e = env.Entry(id);
+            ((FunctionEntry)env.ThisEntry()).AddArgType(e.TypeString());
+
+            String code = e.Type() + " " + e.ID();
+            for (int i = 0; i < dims; i++) code += "[]";
+            RESULT = code;
         }
     
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("argumentDeclaration",16, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-2)), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);

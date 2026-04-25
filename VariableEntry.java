@@ -40,6 +40,9 @@ public class VariableEntry extends SymbolTableEntry {
     public String IsStaticString() { return isStatic ? "yes" : "no"; }
 
     @Override
+    public String Type() { return type; }
+
+    @Override
     public String TypeString() {
         if (arrayDimensions == 0) return type;
 

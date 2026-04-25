@@ -13,8 +13,11 @@ public class Code {
     public SymbolTable Env() { return env; }
     public String code() { return code; }
 
-    public String Generate(String blockName) {
-        return code + "for " + blockName + "\n";
+    public String Generate(String blockName) { return code + "//"; }
+
+    public static String Indent(int indents) {
+        if (indents < 0) return "";
+        return "    ".repeat(indents);
     }
 
     public static void ResetLabels() { labelIdx = 0; }

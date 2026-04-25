@@ -4,6 +4,7 @@ import java.util.*;
 action code {:
     SymbolTable env = new SymbolTable();
     Stack<SymbolTable> envStack = new Stack<>();
+    int indents = 0;
 :};
 
 /* Names and literals */
@@ -21,22 +22,22 @@ terminal STRING, SYSTEM, CLASS, FALSE, WHILE, ARGS, ELSE, JAVA, MAIN, THIS;
 terminal TRUE, UTIL, VOID, INT, NEW, OUT, IF, IN;
 
 non terminal Code program;
-non terminal classDefinitionList;
-non terminal classDefinition;
-non terminal classBody;
-non terminal memberList;
-non terminal memberDeclaration;
-non terminal memberDeclarator;
+non terminal List<String> classDefinitionList;
+non terminal String classDefinition;
+non terminal String classBody;
+non terminal List<String> memberList;
+non terminal String memberDeclaration;
+non terminal VariableEntry memberDeclarator;
 non terminal Boolean isStatic;
 non terminal VariableEntry variableDeclaration;
 non terminal Integer arrayDimensions;
 non terminal List<Integer> arraySizes;
 non terminal String type;
-non terminal functionDefinition;
-non terminal functionDeclaration;
-non terminal argumentDeclarationListOpt;
-non terminal argumentDeclarationList;
-non terminal argumentDeclaration;
+non terminal String functionDefinition;
+non terminal String functionDeclaration;
+non terminal List<String> argumentDeclarationListOpt;
+non terminal List<String> argumentDeclarationList;
+non terminal String argumentDeclaration;
 non terminal mainDeclaration;
 non terminal functionBody;
 non terminal variableDeclarationList;
@@ -74,13 +75,30 @@ non terminal returnStatementOpt;
 
 start with program;
 
-program ::= IMPORT JAVA DOT UTIL DOT STAR SEMICOLON classDefinitionList
-    {: RESULT = new Code(env, "// Intermediate code "); :} ;
+program ::= IMPORT JAVA DOT UTIL DOT STAR SEMICOLON classDefinitionList:classes
+    {:
+        String code = "";
 
-classDefinitionList ::= classDefinition | classDefinitionList classDefinition ;
+        for (String classDef : classes) code += classDef;
+
+        RESULT = new Code(env, code);
+    :} ;
+
+classDefinitionList ::= 
+    classDefinition:classDef
+    {:
+        List<String> newClassesList = new ArrayList<>();
+        newClassesList.add(classDef);
+        RESULT = newClassesList;
+    :}
+    | classDefinitionList:classes classDefinition:classDef
+    {:
+        classes.add(classDef);
+        RESULT = classes;
+    :} ;
 
 classDefinition ::= 
-    CLASS ID:id  
+    CLASS ID:id 
     {:
         SymbolTable classEnv = new SymbolTable(id, env);
 
@@ -88,21 +106,57 @@ classDefinition ::=
         envStack.push(env);
         
         // Enter new scope if class declaration successful
-        if(env.AddClass(id, classEnv)) env = classEnv;
+        if(env.AddClass(id, classEnv))
+            env = classEnv;
 
         // Otherwise, enter a dummy env to discard the class body
         else env = new SymbolTable("<invalid class>", env);
-    :} 
-    LBRACE classBody RBRACE
+    :}
+    LBRACE classBody:classMems RBRACE
     {:
+        RESULT = classMems;    
         env = envStack.pop();
     :} ;
 
-classBody ::= memberList | ;
+classBody ::= memberList:mems 
+    {:
+        String code = "";
 
-memberList ::= memberDeclaration | memberList memberDeclaration ;
+        for (int i = 0; i < mems.size(); i++)
+        {
+            if (i > 0) code += "\n";
+            code += mems.get(i);
+        }
 
-memberDeclaration ::= memberDeclarator | functionDefinition ;
+        RESULT = code;
+    :} 
+    | {: RESULT = ""; :} ;
+
+memberList ::= memberDeclaration:mem
+    {:
+        List<String> newMemsList = new ArrayList<>();
+        newMemsList.add(mem);
+        RESULT = newMemsList;
+    :}
+    | memberList:mems memberDeclaration:mem
+    {:
+        mems.add(mem);
+        RESULT = mems;
+    :} ;
+
+memberDeclaration ::= 
+    memberDeclarator {: RESULT = Code.Indent(indents) + "member\n"; :}
+    | functionDefinition:funcCode 
+    {: 
+        String code = "";
+        for (String line : funcCode.split("\\R")) // Any newline type
+        {
+            code += Code.Indent(indents) + line + "\n";
+        }
+
+        // Add code to indent each line as appropriate
+        RESULT = code;
+    :} ;
 
 memberDeclarator ::= 
     isStatic:stat variableDeclaration:d 
@@ -147,11 +201,23 @@ type ::= ID:id {: RESULT = id; :} | INT {: RESULT = "int"; :}
     | BOOLEAN {: RESULT = "boolean"; :} ;
 
 functionDefinition ::=
-    functionDeclaration LBRACE functionBody RBRACE 
-    {: env = envStack.pop(); :} ;
+    functionDeclaration:funcSigCode LBRACE functionBody RBRACE 
+    {:
+        SymbolTableEntry e = env.ThisEntry();
+        String code = funcSigCode;
+
+        // Close bracket
+        if (e.ID().equals("main")) 
+            code += Code.Indent(indents) + "return 0;\n";
+        code += Code.Indent(--indents) + "}";
+
+        RESULT = code;
+        
+        env = envStack.pop();
+    :} ;
 
 functionDeclaration ::= 
-    PUBLIC isStatic:stat type:t ID:id 
+    PUBLIC isStatic:stat type:t ID:id  
     {:
         SymbolTable funcEnv = new SymbolTable(id, env);
         
@@ -159,12 +225,27 @@ functionDeclaration ::=
         envStack.push(env);
         
         // Enter new scope if function declaration successful
-        if(env.AddFunc(id, t, stat, funcEnv)) env = funcEnv;
-
-        // Otherwise, enter a dummy env to discard the class body
+        if(env.AddFunc(id, t, stat, funcEnv)) 
+            env = funcEnv;
+            
+        // Otherwise, enter a dummy env to discard the function body
         else env = new SymbolTable("<invalid function>", env);
     :}
-    LPAREN argumentDeclarationListOpt RPAREN 
+    LPAREN argumentDeclarationListOpt:args RPAREN
+    {:
+        // Because of the dummy scope, this is just dumped on failed entry
+        SymbolTableEntry e = env.ThisEntry();
+
+        String code = Code.Indent(indents++) + e.Type() +" "+ e.ID() + "(";
+        for (int i = 0; i < args.size(); i++)
+        {
+            code += args.get(i);
+            if (i < args.size() - 1) code += ", ";
+        }
+        code += ") {\n";
+
+        RESULT = code;
+    :}
     | mainDeclaration
     {:
         SymbolTable mainFuncEnv = new SymbolTable("main", env);
@@ -173,32 +254,59 @@ functionDeclaration ::=
         envStack.push(env);
         
         // Enter new scope if function declaration successful
-        if(env.AddFunc("main", "void", true, mainFuncEnv)) env = mainFuncEnv;
+        if(env.AddFunc("main", "void", true, mainFuncEnv))
+        {
+            env = mainFuncEnv;
+            RESULT = "int main() {\n";
+            indents++;
+        }
 
         // Otherwise, enter a dummy env to discard the class body
-        else env = new SymbolTable("<invalid function>", env);
+        else
+        {
+            env = new SymbolTable("<invalid function>", env);
+            RESULT = null;
+        }
     :} ;
 
-argumentDeclarationListOpt ::= argumentDeclarationList | ;
+argumentDeclarationListOpt ::= 
+    argumentDeclarationList:args {: RESULT = args; :}
+    | {: RESULT = new ArrayList<>();:};
 
-argumentDeclarationList ::= argumentDeclaration
-    | argumentDeclarationList COMMA argumentDeclaration ;
+argumentDeclarationList ::= 
+    argumentDeclaration: arg
+    {:
+        List<String> newArgsList = new ArrayList<>();
+        newArgsList.add(arg);
+        RESULT = newArgsList;
+    :}
+    | argumentDeclarationList:args COMMA argumentDeclaration:arg
+    {:
+        args.add(arg);
+        RESULT = args;
+    :} ;
 
 argumentDeclaration ::= 
     type:t ID:id 
     {:
         if (env.AddVar(id, t)) 
         {
-            String typeString = env.Entry(id).TypeString();
-            ((FunctionEntry)env.ThisEntry()).AddArgType(typeString);
+            SymbolTableEntry e = env.Entry(id);
+            ((FunctionEntry)env.ThisEntry()).AddArgType(e.TypeString());
+            
+            RESULT = e.Type() + " " + e.ID();
         }
     :}
     | type:t ID:id arrayDimensions:dims 
     {:
         if (env.AddVar(id, t, dims))
         {
-            String typeString = env.Entry(id).TypeString();
-            ((FunctionEntry)env.ThisEntry()).AddArgType(typeString);
+            SymbolTableEntry e = env.Entry(id);
+            ((FunctionEntry)env.ThisEntry()).AddArgType(e.TypeString());
+
+            String code = e.Type() + " " + e.ID();
+            for (int i = 0; i < dims; i++) code += "[]";
+            RESULT = code;
         }
     :} ;
 

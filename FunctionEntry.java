@@ -17,6 +17,9 @@ public class FunctionEntry extends SymbolTableEntry {
     public String IsStaticString() { return isStatic ? "yes" : "no"; }
 
     @Override
+    public String Type() { return type; }
+
+    @Override
     public String TypeString() {
         String str = "[";
         for (int i = 0; i < argTypes.size(); i++)
