@@ -31,13 +31,11 @@ parser: $(GEN_DIR)/
 compile: lexer parser $(CLASS_DIR)/
 	javac -cp $(CLASS_PATH) -d $(CLASS_DIR) $(GEN_DIR)/*.java *.java
 
-generate_code:
-	java -cp $(CLASS_PATH) $(CODE_GEN_DRIVER) ../../tests/Test1
-	java -cp $(CLASS_PATH) $(CODE_GEN_DRIVER) ../../tests/Test2
-	java -cp $(CLASS_PATH) $(CODE_GEN_DRIVER) ../../tests/Test3
-	java -cp $(CLASS_PATH) $(CODE_GEN_DRIVER) ../../tests/Test4
-	java -cp $(CLASS_PATH) $(CODE_GEN_DRIVER) ../../tests/Test5
-	java -cp $(CLASS_PATH) $(CODE_GEN_DRIVER) ../../tests/Test6
+generate_code: build
+	java -cp $(CLASS_PATH) $(CODE_GEN_DRIVER) Test1
+	java -cp $(CLASS_PATH) $(CODE_GEN_DRIVER) Test2
+	java -cp $(CLASS_PATH) $(CODE_GEN_DRIVER) Test4
+	java -cp $(CLASS_PATH) $(CODE_GEN_DRIVER) Test6
 
 clean:
 	rm -rf build

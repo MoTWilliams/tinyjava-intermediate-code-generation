@@ -20,7 +20,7 @@ terminal BOOLEAN, NEXTINT, PRINTLN, SCANNER, IMPORT, PUBLIC, RETURN, STATIC;
 terminal STRING, SYSTEM, CLASS, FALSE, WHILE, ARGS, ELSE, JAVA, MAIN, THIS;
 terminal TRUE, UTIL, VOID, INT, NEW, OUT, IF, IN;
 
-non terminal SymbolTable program;
+non terminal Code program;
 non terminal classDefinitionList;
 non terminal classDefinition;
 non terminal classBody;
@@ -75,7 +75,7 @@ non terminal returnStatementOpt;
 start with program;
 
 program ::= IMPORT JAVA DOT UTIL DOT STAR SEMICOLON classDefinitionList
-    {: RESULT = env; :} ;
+    {: RESULT = new Code(env, "// Intermediate code "); :} ;
 
 classDefinitionList ::= classDefinition | classDefinitionList classDefinition ;
 

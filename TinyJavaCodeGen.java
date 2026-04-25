@@ -23,15 +23,19 @@ public class TinyJavaCodeGen {
 
         try
         {
-            Reader r = new FileReader(programName + ".java");
+            Reader r = new FileReader("../../tests/" + programName + ".java");
             SymbolFactory sf = new ComplexSymbolFactory();
 
             TinyJavaLexer lexer = new TinyJavaLexer(r, sf);
             TinyJavaParser parser = new TinyJavaParser(lexer, sf);
 
-            SymbolTable env = (SymbolTable) parser.parse().value;
-            env.PrintEnv("global");
+            Code code = (Code) parser.parse().value;
+            code.Env().PrintEnv("global");
             System.out.println("\nParsing successful.");
+
+            PrintStream outputStream = 
+                new PrintStream("../../output/" + programName + ".c");
+            outputStream.print(code.Generate("global"));
         }
         catch (Exception e)
         {
