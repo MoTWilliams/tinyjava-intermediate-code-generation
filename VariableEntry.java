@@ -41,7 +41,7 @@ public class VariableEntry extends SymbolTableEntry {
         String code = type + " " + ID();
 
         for (Integer size : arraySizes) code += "[" + size + "]";
-        return code + ";\n";
+        return code + ";";
     }
 
     @Override

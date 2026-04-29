@@ -132,10 +132,12 @@ classBody ::= memberList:mems
     {:
         String code = "";
 
-        for (int i = 0; i < mems.size(); i++)
+        for (var mem : mems)
         {
-            if (i > 0) code += "\n";
-            code += mems.get(i);
+            if (mem == null || mem.isEmpty()) continue;
+
+            if (!code.isEmpty()) code += "\n\n";
+            code += mem;
         }
 
         RESULT = code;
@@ -353,7 +355,7 @@ functionBody ::= statementListOpt:statements returnStatementOpt:ret
         String code = Indent(indents+1) + "// Local variables\n";
 
         // Local variables
-        for (var v : vars) code += Indent(indents+1) + v;
+        for (var v : vars) code += Indent(indents+1) + v + "\n";
         code += "\n" + Indent(indents+1) + "// Temporary variables\n";
 
         // Temporary variables
