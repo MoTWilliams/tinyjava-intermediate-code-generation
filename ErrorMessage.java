@@ -2,7 +2,7 @@
  * Morgan Williams - mtw0067                                                  *
  * CSCE 4650.001                                                              *
  * Assignment 5: Intermediate Code Generation                                 *
- * Apr 30, 2026                                                               *
+ * Apr 29, 2026                                                               *
  ******************************************************************************/
 
 /******************************************************************************
@@ -12,7 +12,7 @@
 public class ErrorMessage {
     public static void LaunchError() {
         System.out.println("***** ERROR: File name expected *****");
-        System.out.println("Usage: make run input_program_name");
+        System.out.println("Usage: make generate_code input_program_name");
         System.exit(0);
     }
 

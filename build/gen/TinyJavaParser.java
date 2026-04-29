@@ -489,6 +489,12 @@ public class TinyJavaParser extends java_cup.runtime.lr_parser {
 class CUP$TinyJavaParser$actions {
 
 
+    // Code is generated throughout by first generating code for child
+    // expressions, then concatenating in execution order. Temporaries and
+    // labels are created as needed with Code.NextTemp() and Code.NextLabel(), 
+    // respectively, and the results are passed up the tree as 
+    // ExpressionCode(code, type, place)
+    
     SymbolTable env = new SymbolTable();
     Stack<SymbolTable> envStack = new Stack<>();
     int indents = 0;
@@ -563,6 +569,7 @@ class CUP$TinyJavaParser$actions {
 		int classDefright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).right;
 		String classDef = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.peek()).value;
 		
+        // BASE CASE: Create the list and add the first element
         List<String> newClassesList = new ArrayList<>();
         newClassesList.add(classDef);
         RESULT = newClassesList;
@@ -582,6 +589,7 @@ class CUP$TinyJavaParser$actions {
 		int classDefright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).right;
 		String classDef = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.peek()).value;
 		
+        // RECURSIVE CASE: add the next element to the existing list
         classes.add(classDef);
         RESULT = classes;
     
@@ -599,7 +607,7 @@ class CUP$TinyJavaParser$actions {
 
         SymbolTable classEnv = new SymbolTable(id, env);
 
-        // Push env in preparation to make new scope
+        // Push current env to the stack in preparation for switching scope
         envStack.push(env);
         
         // Enter new scope if class declaration successful
@@ -626,7 +634,9 @@ class CUP$TinyJavaParser$actions {
 		int classMemsright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).right;
 		String classMems = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).value;
 		
-        RESULT = classMems;    
+        RESULT = classMems;
+
+        // Restore previous scope    
         env = envStack.pop();
     
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("classDefinition",2, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-5)), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
@@ -846,8 +856,6 @@ class CUP$TinyJavaParser$actions {
 		int sizeright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).right;
 		String size = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).value;
 		
-        // BASE CASE: Create the list and initialize with size of the array's 
-        // first dimension 
         List<Integer> newSizesList = new ArrayList<>();
         newSizesList.add(Integer.parseInt(size));
         RESULT = newSizesList;
@@ -867,7 +875,6 @@ class CUP$TinyJavaParser$actions {
 		int sizeright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).right;
 		String size = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-1)).value;
 		
-        // RECURSIVE CASE: Add the next dimension's size to the existing list
         sizes.add(Integer.parseInt(size));
         RESULT = sizes;
     
@@ -929,6 +936,7 @@ class CUP$TinyJavaParser$actions {
         
         RESULT = code;
         
+        // Restore previous scope 
         env = envStack.pop();
     
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("functionDefinition",12, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-3)), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
@@ -951,7 +959,7 @@ class CUP$TinyJavaParser$actions {
 
         SymbolTable funcEnv = new SymbolTable(id, env);
         
-        // Push env in preparation to make new scope
+        // Push current env to the stack in preparation for switching scope
         envStack.push(env);
         
         // Enter new scope if function declaration successful
@@ -1012,7 +1020,7 @@ class CUP$TinyJavaParser$actions {
 		
         SymbolTable mainFuncEnv = new SymbolTable("main", env);
         
-        // Push env in preparation to make new scope
+        // Push current env to the stack in preparation for switching scope
         envStack.push(env);
         
         // Enter new scope if function declaration successful
@@ -1172,6 +1180,9 @@ class CUP$TinyJavaParser$actions {
 		int retright = ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()).right;
 		String ret = (String)((java_cup.runtime.Symbol) CUP$TinyJavaParser$stack.peek()).value;
 		
+        // Reset temp/label counters. Emit full function body code 
+        // (variable/temp declarations and all function actions)
+        
         Code.ResetCounts();
         String code = Indent(indents+1) + "// Temporary variables\n";
 
@@ -1571,7 +1582,7 @@ class CUP$TinyJavaParser$actions {
         if (var == null) ErrorMessage.print("Variable was null");
         if (val == null) ErrorMessage.print("Assigned value was null");
 
-        if (val.Type().equals("nextInt")) val.SetPlaceType(env, "int");
+        // if (val.Type().equals("nextInt")) val.SetPlaceType(env, "int");
 
         String code = var.Code() + val.Code() + Indent(indents+1)
             + var.Place() + " = " + val.Place() + ";\n";
@@ -2294,9 +2305,10 @@ class CUP$TinyJavaParser$actions {
               ExpressionCode RESULT =null;
 		
         String place = Code.NextTemp();
+        env.AddTemp(place, "int");
         String code = Indent(indents+1) + "scanf(\"%d\", &" + place + ");\n";
 
-        RESULT = new ExpressionCode(code, "nextInt", place);
+        RESULT = new ExpressionCode(code, "int", place);
     
               CUP$TinyJavaParser$result = parser.getSymbolFactory().newSymbol("assignedValue",48, ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.elementAt(CUP$TinyJavaParser$top-4)), ((java_cup.runtime.Symbol)CUP$TinyJavaParser$stack.peek()), RESULT);
             }

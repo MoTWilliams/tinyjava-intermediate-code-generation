@@ -1,3 +1,15 @@
+/******************************************************************************
+ * Morgan Williams - mtw0067                                                  *
+ * CSCE 4650.001                                                              *
+ * Assignment 5: Intermediate Code Generation                                 *
+ * Apr 29, 2026                                                               *
+ ******************************************************************************/
+
+/******************************************************************************
+ * SymbolTable.java: Stores variables, functions, and classes for each scope  *
+ * and facilitates symbol insertion, lookup, and nested environment traversal *
+ ******************************************************************************/
+
 import java.util.*;
 
 public class SymbolTable {

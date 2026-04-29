@@ -2,12 +2,12 @@
  * Morgan Williams - mtw0067                                                  *
  * CSCE 4650.001                                                              *
  * Assignment 5: Intermediate Code Generation                                 *
- * Apr 30, 2026                                                               *
+ * Apr 29, 2026                                                               *
  ******************************************************************************/
 
 /******************************************************************************
- * TinyJavaCodeGen.java: Main Driver; Reads from the input file, constructs   * 
- * the symbol table, and writes intermediate code to a .c file                *
+ * TinyJavaCodeGen.java: Main driver; parses input file, constructs the       *
+ * symbol table, and outputs generated C code to file                         *
  ******************************************************************************/
 
 import java.io.*;
@@ -23,19 +23,24 @@ public class TinyJavaCodeGen {
 
         try
         {
-            Reader r = new FileReader("../../tests/" + programName + ".java");
+            // Read the input file
+            Reader r = new FileReader(programName + ".java");
+            
+            // Instantiate lexer and parser
             SymbolFactory sf = new ComplexSymbolFactory();
-
             TinyJavaLexer lexer = new TinyJavaLexer(r, sf);
             TinyJavaParser parser = new TinyJavaParser(lexer, sf);
 
+            // Parse and generate intermediate code
             Code code = (Code) parser.parse().value;
             code.Env().PrintEnv("global");
             System.out.println("\nParsing successful.");
 
+            // Write generated C code to the output file
             PrintStream outputStream = 
-                new PrintStream("../../output/" + programName + ".c");
+                new PrintStream(programName + ".c");
             outputStream.print(code.Generate("global"));
+            outputStream.close();
         }
         catch (Exception e)
         {

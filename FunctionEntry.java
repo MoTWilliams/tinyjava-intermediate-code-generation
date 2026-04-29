@@ -1,10 +1,21 @@
+/******************************************************************************
+ * Morgan Williams - mtw0067                                                  *
+ * CSCE 4650.001                                                              *
+ * Assignment 5: Intermediate Code Generation                                 *
+ * Apr 29, 2026                                                               *
+ ******************************************************************************/
+
+/******************************************************************************
+ * FunctionEntry.java: SymbolTableEntry subclass used to store metadata for   *
+ * function declarations, including return type and scope                     *
+ ******************************************************************************/
+
 import java.util.*;
 
 public class FunctionEntry extends SymbolTableEntry {
     Boolean isStatic;
     String type;
     List<String> argTypes;
-    HashMap<String, String> params; // 
 
     public FunctionEntry(String id, Boolean isStatic, String type,
                                 SymbolTable env) {

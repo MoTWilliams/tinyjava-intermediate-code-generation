@@ -1,3 +1,16 @@
+/******************************************************************************
+ * Morgan Williams - mtw0067                                                  *
+ * CSCE 4650.001                                                              *
+ * Assignment 5: Intermediate Code Generation                                 *
+ * Apr 29, 2026                                                               *
+ ******************************************************************************/
+
+/******************************************************************************
+ * VariableEntry.java: SymbolTableEntry subclass used to store metadata for   *
+ * scalar and array variables, including static status, type, and array       *
+ * dimensions, if they exist                                                  *
+ ******************************************************************************/
+
 import java.util.*;
 
 public class VariableEntry extends SymbolTableEntry {

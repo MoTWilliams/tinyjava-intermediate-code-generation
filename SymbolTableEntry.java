@@ -1,3 +1,16 @@
+/******************************************************************************
+ * Morgan Williams - mtw0067                                                  *
+ * CSCE 4650.001                                                              *
+ * Assignment 5: Intermediate Code Generation                                 *
+ * Apr 29, 2026                                                               *
+ ******************************************************************************/
+
+/******************************************************************************
+ * SymbolTableEntry.java: Base class for all symbol table entries. Defines    *
+ * common fields and behaviors among class, function, and variable symbol     *
+ * table entries                                                              *
+ ******************************************************************************/
+
 public class SymbolTableEntry {
     private String id;
     private SymbolTable env;

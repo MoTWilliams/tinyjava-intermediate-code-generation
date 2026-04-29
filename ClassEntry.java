@@ -1,3 +1,15 @@
+/******************************************************************************
+ * Morgan Williams - mtw0067                                                  *
+ * CSCE 4650.001                                                              *
+ * Assignment 5: Intermediate Code Generation                                 *
+ * Apr 29, 2026                                                               *
+ ******************************************************************************/
+
+/******************************************************************************
+ * ClassEntry.java: SymbolTableEntry subclass used to store class             *
+ * declarations and their associated scope                                    *
+ ******************************************************************************/
+
 public class ClassEntry extends SymbolTableEntry {
  
     public ClassEntry(String id, SymbolTable env) {

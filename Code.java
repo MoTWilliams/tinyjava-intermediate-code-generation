@@ -1,3 +1,15 @@
+/******************************************************************************
+ * Morgan Williams - mtw0067                                                  *
+ * CSCE 4650.001                                                              *
+ * Assignment 5: Intermediate Code Generation                                 *
+ * Apr 29, 2026                                                               *
+ ******************************************************************************/
+
+/******************************************************************************
+ * Code.java: Maintains generated code and generates unique temporary and     *
+ * label names                                                                *
+ ******************************************************************************/
+
 public class Code {
     private static int labelIdx;
     private static int tempIdx;
@@ -13,7 +25,7 @@ public class Code {
     public SymbolTable Env() { return env; }
     public String code() { return code; }
 
-    public String Generate(String blockName) { return code + "//"; }
+    public String Generate(String blockName) { return code + "\n//"; }
 
     public static void ResetCounts() { labelIdx = 0; tempIdx = 0; }
 

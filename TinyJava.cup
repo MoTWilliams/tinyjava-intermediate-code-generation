@@ -1,7 +1,25 @@
+/******************************************************************************
+ * Morgan Williams - mtw0067                                                  *
+ * CSCE 4650.001                                                              *
+ * Assignment 5: Intermediate Code Generation                                 *
+ * Apr 29, 2026                                                               *
+ ******************************************************************************/
+
+/******************************************************************************
+ * TinyJava.cup: CUP grammar with semantic actions; used for parsing TinyJava *
+ * and generating intermediate three-address code                             *
+ ******************************************************************************/
+
 import java_cup.runtime.*;
 import java.util.*;
 
 action code {:
+    // Code is generated throughout by first generating code for child
+    // expressions, then concatenating in execution order. Temporaries and
+    // labels are created as needed with Code.NextTemp() and Code.NextLabel(), 
+    // respectively, and the results are passed up the tree as 
+    // ExpressionCode(code, type, place)
+    
     SymbolTable env = new SymbolTable();
     Stack<SymbolTable> envStack = new Stack<>();
     int indents = 0;
@@ -97,12 +115,14 @@ program ::= IMPORT JAVA DOT UTIL DOT STAR SEMICOLON classDefinitionList:classes
 classDefinitionList ::= 
     classDefinition:classDef
     {:
+        // BASE CASE: Create the list and add the first element
         List<String> newClassesList = new ArrayList<>();
         newClassesList.add(classDef);
         RESULT = newClassesList;
     :}
     | classDefinitionList:classes classDefinition:classDef
     {:
+        // RECURSIVE CASE: add the next element to the existing list
         classes.add(classDef);
         RESULT = classes;
     :} ;
@@ -112,7 +132,7 @@ classDefinition ::=
     {:
         SymbolTable classEnv = new SymbolTable(id, env);
 
-        // Push env in preparation to make new scope
+        // Push current env to the stack in preparation for switching scope
         envStack.push(env);
         
         // Enter new scope if class declaration successful
@@ -124,7 +144,9 @@ classDefinition ::=
     :}
     LBRACE classBody:classMems RBRACE
     {:
-        RESULT = classMems;    
+        RESULT = classMems;
+
+        // Restore previous scope    
         env = envStack.pop();
     :} ;
 
@@ -191,15 +213,12 @@ arrayDimensions ::= LBRACKET RBRACKET {: RESULT = 1; :}
 
 arraySizes ::= LBRACKET INTEGER:size RBRACKET 
     {:
-        // BASE CASE: Create the list and initialize with size of the array's 
-        // first dimension 
         List<Integer> newSizesList = new ArrayList<>();
         newSizesList.add(Integer.parseInt(size));
         RESULT = newSizesList;
     :}
     | arraySizes:sizes LBRACKET INTEGER:size RBRACKET
     {:
-        // RECURSIVE CASE: Add the next dimension's size to the existing list
         sizes.add(Integer.parseInt(size));
         RESULT = sizes;
     :} ;
@@ -223,6 +242,7 @@ functionDefinition ::=
         
         RESULT = code;
         
+        // Restore previous scope 
         env = envStack.pop();
     :} ;
 
@@ -231,7 +251,7 @@ functionDeclaration ::=
     {:
         SymbolTable funcEnv = new SymbolTable(id, env);
         
-        // Push env in preparation to make new scope
+        // Push current env to the stack in preparation for switching scope
         envStack.push(env);
         
         // Enter new scope if function declaration successful
@@ -261,7 +281,7 @@ functionDeclaration ::=
     {:
         SymbolTable mainFuncEnv = new SymbolTable("main", env);
         
-        // Push env in preparation to make new scope
+        // Push current env to the stack in preparation for switching scope
         envStack.push(env);
         
         // Enter new scope if function declaration successful
@@ -333,6 +353,9 @@ mainDeclaration ::=
 
 functionBody ::= statementListOpt:statements returnStatementOpt:ret 
     {:
+        // Reset temp/label counters. Emit full function body code 
+        // (variable/temp declarations and all function actions)
+        
         Code.ResetCounts();
         String code = Indent(indents+1) + "// Temporary variables\n";
 
@@ -414,6 +437,7 @@ matchedStatement ::=
     IF LPAREN expression:condition RPAREN 
         matchedStatement:doIfTrue ELSE matchedStatement:doIfFalse
     {:
+        // If-else
         if (!condition.Type().equals("boolean"))
             ErrorMessage.print("Condition must be a boolean expression");
         
@@ -430,6 +454,7 @@ matchedStatement ::=
     :}
     | WHILE LPAREN expression:condition RPAREN matchedStatement:loopBody
     {:
+        // While loop
         if (!condition.Type().equals("boolean"))
             ErrorMessage.print("Condition must be a boolean expression");
         
@@ -502,10 +527,9 @@ compoundStatement ::= LBRACE statementList:sList RBRACE
 
 assignmentStatement ::= variable:var ASSIGN assignedValue:val SEMICOLON
     {:
+        // Evaluates RHS, then assigns to LHS
         if (var == null) ErrorMessage.print("Variable was null");
         if (val == null) ErrorMessage.print("Assigned value was null");
-
-        if (val.Type().equals("nextInt")) val.SetPlaceType(env, "int");
 
         String code = var.Code() + val.Code() + Indent(indents+1)
             + var.Place() + " = " + val.Place() + ";\n";
@@ -516,6 +540,8 @@ assignmentStatement ::= variable:var ASSIGN assignedValue:val SEMICOLON
 variable ::= THIS {: RESULT = null; /* Classes not supported */ :} 
     | ID:id arrayPositionOpt:arrayPosList
     {:
+        // Variable access: resolve variable by name, then compute array 
+        // indexing if present
         SymbolTableEntry e = env.Entry(id);
         if (e == null && env.ParentEnv() != null)
             e = env.ParentEnv().Entry(id);
@@ -542,6 +568,8 @@ object ::= variable:varCode {: RESULT = varCode; :}
 
 functionCall ::= ID:id LPAREN parameters:paramList RPAREN
     {:
+        // Evaluate arguments into temps, then generate call and assign to new
+        // temp
         String place = Code.NextTemp();
         String type = ToCType(env.ParentEnv().Entry(id).Type());
         env.AddTemp(place, type);
@@ -581,6 +609,7 @@ expressionList ::= expression:param
 expression ::= andExpression:andExp {: RESULT = andExp; :} 
     | expression:exp OR andExpression:andExp
     {:
+        // Short-circuit OR
         if (!exp.Type().equals("boolean")
                 || !andExp.Type().equals("boolean"))
             ErrorMessage.print("|| requires boolean operands");
@@ -608,6 +637,7 @@ expression ::= andExpression:andExp {: RESULT = andExp; :}
 andExpression ::= relationalExpression:relExp {: RESULT = relExp; :}
     | andExpression:andExp AND relationalExpression:relExp
     {:
+        // Short-circuit AND
         if (!andExp.Type().equals("boolean")||!relExp.Type().equals("boolean"))
             ErrorMessage.print("&& requires boolean operands");
 
@@ -753,9 +783,10 @@ assignedValue ::= expression:expCode {: RESULT = expCode; :}
     | IN DOT NEXTINT LPAREN RPAREN
     {:
         String place = Code.NextTemp();
+        env.AddTemp(place, "int");
         String code = Indent(indents+1) + "scanf(\"%d\", &" + place + ");\n";
 
-        RESULT = new ExpressionCode(code, "nextInt", place);
+        RESULT = new ExpressionCode(code, "int", place);
     :} ;
 
 printStatement ::=
