@@ -11,4 +11,5 @@
 # Build artifacts 
 *.class
 
+output/
 

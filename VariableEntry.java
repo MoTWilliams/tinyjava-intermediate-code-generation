@@ -12,7 +12,7 @@ public class VariableEntry extends SymbolTableEntry {
         this.isStatic = false;
         this.type = type;
         arrayDimensions = 0;
-        arraySizes = null;
+        arraySizes = new ArrayList<>();
     }
 
     // Array
@@ -34,6 +34,14 @@ public class VariableEntry extends SymbolTableEntry {
 
         arraySizes = new ArrayList<>();
         for (int i = 0; i < dimensions; i++) arraySizes.add(0);
+    }
+
+    @Override
+    public String Code() { 
+        String code = type + " " + ID();
+
+        for (Integer size : arraySizes) code += "[" + size + "]";
+        return code + ";\n";
     }
 
     @Override

@@ -5,6 +5,16 @@ action code {:
     SymbolTable env = new SymbolTable();
     Stack<SymbolTable> envStack = new Stack<>();
     int indents = 0;
+
+    String Indent(int indents) {
+        if (indents < 0) return "";
+        return "    ".repeat(indents);
+    }
+
+    String ToCType(String type) {
+        if (type.equals("boolean")) return "int";
+        return type;
+    }
 :};
 
 /* Names and literals */
@@ -27,7 +37,7 @@ non terminal String classDefinition;
 non terminal String classBody;
 non terminal List<String> memberList;
 non terminal String memberDeclaration;
-non terminal VariableEntry memberDeclarator;
+non terminal String memberDeclarator;
 non terminal Boolean isStatic;
 non terminal VariableEntry variableDeclaration;
 non terminal Integer arrayDimensions;
@@ -38,47 +48,47 @@ non terminal String functionDeclaration;
 non terminal List<String> argumentDeclarationListOpt;
 non terminal List<String> argumentDeclarationList;
 non terminal String argumentDeclaration;
-non terminal mainDeclaration;
-non terminal functionBody;
-non terminal variableDeclarationList;
-non terminal statementListOpt;
-non terminal statementList;
-non terminal statement;
-non terminal otherStatement;
-non terminal matchedStatement;
-non terminal openStatement;
-non terminal compoundStatement;
-non terminal assignmentStatement;
-non terminal variable;
-non terminal object;
-non terminal functionCall;
-non terminal parameters;
-non terminal expressionList;
-non terminal expression;
-non terminal andExpression;
-non terminal relationalExpression;
-non terminal arithmeticExpression;
-non terminal term;
-non terminal factor;
-non terminal primaryExpression;
-non terminal unaryOperator;
-non terminal multiplyOperator;
-non terminal addOperator;
-non terminal comparisonOpt;
-non terminal relationalOperator;
-non terminal arrayPositionOpt;
-non terminal arrayPosition;
-non terminal assignedValue;
-non terminal printStatement;
-non terminal returnStatementOpt;
+non terminal String scannerDeclaration;
+non terminal String mainDeclaration;
+non terminal String functionBody;
+non terminal List<String> variableDeclarationList;
+non terminal List<String> statementListOpt;
+non terminal List<String> statementList;
+non terminal String statement;
+non terminal String otherStatement;
+non terminal String matchedStatement;
+non terminal String openStatement;
+non terminal String compoundStatement;
+non terminal String assignmentStatement;
+non terminal ExpressionCode variable;
+non terminal ExpressionCode object;
+non terminal ExpressionCode functionCall;
+non terminal List<ExpressionCode> parameters;
+non terminal List<ExpressionCode> expressionList;
+non terminal ExpressionCode expression;
+non terminal ExpressionCode andExpression;
+non terminal ExpressionCode relationalExpression;
+non terminal ComparisonCode comparisonOpt;
+non terminal ExpressionCode arithmeticExpression;
+non terminal ExpressionCode term;
+non terminal ExpressionCode factor;
+non terminal ExpressionCode primaryExpression;
+non terminal String unaryOperator;
+non terminal String multiplyOperator;
+non terminal String addOperator;
+non terminal String relationalOperator;
+non terminal List<ExpressionCode> arrayPositionOpt;
+non terminal List<ExpressionCode> arrayPosition;
+non terminal ExpressionCode assignedValue;
+non terminal String printStatement;
+non terminal String returnStatementOpt;
 
 
 start with program;
 
 program ::= IMPORT JAVA DOT UTIL DOT STAR SEMICOLON classDefinitionList:classes
     {:
-        String code = "";
-
+        String code = "#include <stdio.h>\n\n";
         for (String classDef : classes) code += classDef;
 
         RESULT = new Code(env, code);
@@ -145,22 +155,17 @@ memberList ::= memberDeclaration:mem
     :} ;
 
 memberDeclaration ::= 
-    memberDeclarator {: RESULT = Code.Indent(indents) + "member\n"; :}
-    | functionDefinition:funcCode 
-    {: 
-        String code = "";
-        for (String line : funcCode.split("\\R")) // Any newline type
-        {
-            code += Code.Indent(indents) + line + "\n";
-        }
-
-        // Add code to indent each line as appropriate
-        RESULT = code;
-    :} ;
+    memberDeclarator:memDec {: RESULT = memDec; :}
+    | functionDefinition:funcDef {: RESULT = funcDef; :}
+    | scannerDeclaration {: RESULT = ""; :} ;
 
 memberDeclarator ::= 
     isStatic:stat variableDeclaration:d 
-    {: if(d != null && stat) d.MarkStatic(); :} ;
+    {:
+        if (d == null) ErrorMessage.print("Variable declaration null");
+        if(stat) d.MarkStatic();
+        RESULT = d.Code();
+    :} ;
 
 variableDeclaration ::= 
     type:t ID:id SEMICOLON 
@@ -201,16 +206,19 @@ type ::= ID:id {: RESULT = id; :} | INT {: RESULT = "int"; :}
     | BOOLEAN {: RESULT = "boolean"; :} ;
 
 functionDefinition ::=
-    functionDeclaration:funcSigCode LBRACE functionBody RBRACE 
+    functionDeclaration:funcSigCode LBRACE functionBody:body RBRACE 
     {:
         SymbolTableEntry e = env.ThisEntry();
         String code = funcSigCode;
 
+        code += body;
+
         // Close bracket
         if (e.ID().equals("main")) 
-            code += Code.Indent(indents) + "return 0;\n";
-        code += Code.Indent(--indents) + "}";
-
+            code += Indent(indents+1) + "return 0;\n";
+        code += "}";
+        indents--;
+        
         RESULT = code;
         
         env = envStack.pop();
@@ -236,7 +244,8 @@ functionDeclaration ::=
         // Because of the dummy scope, this is just dumped on failed entry
         SymbolTableEntry e = env.ThisEntry();
 
-        String code = Code.Indent(indents++) + e.Type() +" "+ e.ID() + "(";
+        String code = Indent(indents) + ToCType(e.Type()) + " " + e.ID() + "(";
+        indents++;
         for (int i = 0; i < args.size(); i++)
         {
             code += args.get(i);
@@ -246,7 +255,7 @@ functionDeclaration ::=
 
         RESULT = code;
     :}
-    | mainDeclaration
+    | mainDeclaration:mainDec
     {:
         SymbolTable mainFuncEnv = new SymbolTable("main", env);
         
@@ -257,7 +266,10 @@ functionDeclaration ::=
         if(env.AddFunc("main", "void", true, mainFuncEnv))
         {
             env = mainFuncEnv;
-            RESULT = "int main() {\n";
+
+            String code = mainDec;
+
+            RESULT = code;
             indents++;
         }
 
@@ -294,7 +306,7 @@ argumentDeclaration ::=
             SymbolTableEntry e = env.Entry(id);
             ((FunctionEntry)env.ThisEntry()).AddArgType(e.TypeString());
             
-            RESULT = e.Type() + " " + e.ID();
+            RESULT = ToCType(e.Type()) + " " + e.ID();
         }
     :}
     | type:t ID:id arrayDimensions:dims 
@@ -304,90 +316,461 @@ argumentDeclaration ::=
             SymbolTableEntry e = env.Entry(id);
             ((FunctionEntry)env.ThisEntry()).AddArgType(e.TypeString());
 
-            String code = e.Type() + " " + e.ID();
+            String code = ToCType(e.Type()) + " " + e.ID();
             for (int i = 0; i < dims; i++) code += "[]";
             RESULT = code;
         }
     :} ;
 
+scannerDeclaration ::= 
+    STATIC SCANNER IN ASSIGN NEW SCANNER LPAREN SYSTEM DOT IN RPAREN SEMICOLON ;
+
 mainDeclaration ::= 
     PUBLIC STATIC VOID MAIN LPAREN STRING ARGS LBRACKET RBRACKET RPAREN
-    | STATIC SCANNER IN ASSIGN NEW SCANNER LPAREN SYSTEM DOT IN RPAREN SEMICOLON
-    PUBLIC STATIC VOID MAIN LPAREN STRING ARGS LBRACKET RBRACKET RPAREN ;
+    {: RESULT = "int main() {\n"; :} ;
 
-functionBody ::= statementListOpt returnStatementOpt
-    | variableDeclarationList statementListOpt returnStatementOpt ;
+functionBody ::= statementListOpt:statements returnStatementOpt:ret 
+    {:
+        Code.ResetCounts();
+        String code = Indent(indents+1) + "// Temporary variables\n";
 
-variableDeclarationList ::= variableDeclaration
-    | variableDeclarationList variableDeclaration ;
+        // Declare all temporary variables
+        for (var temp : env.Temps()) code += Indent(indents+1) + temp;
+        code += "\n";
 
-statementListOpt ::= statementList | ;
+        // Function actions
+        for (var s : statements) code += s;
+        
+        // Return statement
+        code += "\n" + ret;
 
-statementList ::= statement | statementList statement ;
+        RESULT = code;
+    :}
+    | variableDeclarationList:vars 
+        statementListOpt:statements returnStatementOpt:ret
+    {:
+        Code.ResetCounts();
+        String code = Indent(indents+1) + "// Local variables\n";
 
-statement ::= matchedStatement | openStatement ;
+        // Local variables
+        for (var v : vars) code += Indent(indents+1) + v;
+        code += "\n" + Indent(indents+1) + "// Temporary variables\n";
 
-otherStatement ::= compoundStatement | assignmentStatement | printStatement ;
+        // Temporary variables
+        for (var temp : env.Temps()) code += Indent(indents+1) + temp;
+        code += "\n";
+
+        // Function actions
+        for (var s : statements) code += s;
+        
+        // Return statement
+        code += "\n" + ret;
+
+        RESULT = code;
+    :} ;
+
+variableDeclarationList ::= 
+    variableDeclaration:varEntry
+    {:
+        if (varEntry == null) ErrorMessage.print("Variable declaration null");
+        
+        List<String> newVarDeclarationList = new ArrayList<>();
+        newVarDeclarationList.add(varEntry.Code());
+        RESULT = newVarDeclarationList;
+    :}
+    | variableDeclarationList:vars variableDeclaration:varEntry
+    {:
+        if (varEntry == null) ErrorMessage.print("Variable declaration null");
+        
+        vars.add(varEntry.Code());
+        RESULT = vars;
+    :} ;
+
+statementListOpt ::= statementList:sList {: RESULT = sList; :} 
+    | {: RESULT = new ArrayList<>(); :} ;
+
+statementList ::= statement:s 
+    {:
+        List<String> newStatementList = new ArrayList<>();
+        newStatementList.add(s);
+        RESULT = newStatementList;
+    :}
+    | statementList:sList statement:s
+    {:
+        sList.add(s);
+        RESULT = sList;
+    :} ;
+
+statement ::= matchedStatement:matched {: RESULT = matched; :} 
+    | openStatement:open {: RESULT = open; :} ;
+
+otherStatement ::= compoundStatement:statements {: RESULT = statements; :} 
+    | assignmentStatement:assign {: RESULT = assign; :} 
+    | printStatement:print {: RESULT = print; :} ;
 
 matchedStatement ::= 
-    IF LPAREN expression RPAREN matchedStatement ELSE matchedStatement
-    | WHILE LPAREN expression RPAREN matchedStatement
-    | otherStatement ;
+    IF LPAREN expression:condition RPAREN 
+        matchedStatement:doIfTrue ELSE matchedStatement:doIfFalse
+    {:
+        if (!condition.Type().equals("boolean"))
+            ErrorMessage.print("Condition must be a boolean expression");
+        
+        String trueL = Code.NextLabel();
+        String endL = Code.NextLabel();
 
-openStatement ::= IF LPAREN expression RPAREN statement
-    | IF LPAREN expression RPAREN matchedStatement ELSE openStatement
-    | WHILE LPAREN expression RPAREN openStatement ;
+        String code = condition.Code() + Indent(indents+1)
+            + "if (" + condition.Place() + ") goto " + trueL + ";\n"
+            + doIfFalse + Indent(indents+1) + "goto " + endL + ";\n"
+            + Indent(indents) + trueL + ":\n" + doIfTrue
+            + Indent(indents) + endL + ":\n";
 
-compoundStatement ::= LBRACE statementList RBRACE ;
+        RESULT = code;
+    :}
+    | WHILE LPAREN expression:condition RPAREN matchedStatement:loopBody
+    {:
+        if (!condition.Type().equals("boolean"))
+            ErrorMessage.print("Condition must be a boolean expression");
+        
+        String loopL = Code.NextLabel();
+        String exitL = Code.NextLabel();
 
-assignmentStatement ::= variable ASSIGN assignedValue SEMICOLON ;
+        String code = Indent(indents) + loopL + ":\n" + condition.Code()
+            + Indent(indents+1) + "if (!" + condition.Place() 
+            + ") goto " + exitL + ";\n" + loopBody
+            + Indent(indents+1) + "goto " + loopL + ";\n"
+            + Indent(indents) + exitL + ":\n";
 
-variable ::= THIS | ID arrayPositionOpt
-    | object DOT ID arrayPositionOpt ;
+        RESULT = code;            
+    :}
+    | otherStatement:statement {: RESULT = statement; :} ;
 
-object ::= variable | functionCall ;
+openStatement ::= IF LPAREN expression:condition RPAREN statement:doIfTrue
+    {:
+        if (!condition.Type().equals("boolean"))
+            ErrorMessage.print("Condition must be a boolean expression");
+        
+        String endL = Code.NextLabel();
 
-functionCall ::= ID LPAREN parameters RPAREN 
-    | object DOT ID LPAREN parameters RPAREN ;
+        String code = condition.Code() + Indent(indents+1)
+            + "if (!" + condition.Place() + ") goto " + endL + ";\n" 
+            + doIfTrue + Indent(indents) + endL + ":\n";
+        
+        RESULT = code;
+    :}
+    | IF LPAREN expression:condition RPAREN
+        matchedStatement:doIfTrue ELSE openStatement:doIfFalse
+    {:
+        if (!condition.Type().equals("boolean"))
+            ErrorMessage.print("Condition must be a boolean expression");
+        
+        String trueL = Code.NextLabel();
+        String endL = Code.NextLabel();
 
-parameters ::= expressionList | ;
+        String code = condition.Code() + Indent(indents+1)
+            + "if (" + condition.Place() + ") goto " + trueL + ";\n"
+            + doIfFalse + Indent(indents+1) + "goto " + endL + ";\n"
+            + Indent(indents) + trueL + ":\n" + doIfTrue
+            + Indent(indents) + endL + ":\n";
 
-expressionList ::= expression | expressionList COMMA expression ;
+        RESULT = code;
+    :}
+    | WHILE LPAREN expression:condition RPAREN openStatement:loopBody
+    {:
+        if (!condition.Type().equals("boolean"))
+            ErrorMessage.print("Condition must be a boolean expression");
+        
+        String loopL = Code.NextLabel();
+        String exitL = Code.NextLabel();
 
-expression ::= andExpression | expression OR andExpression ;
+        String code = Indent(indents) + loopL + ":\n" + condition.Code()
+            + Indent(indents+1) + "if (!" + condition.Place() 
+            + ") goto " + exitL + ";\n" + loopBody
+            + Indent(indents+1) + "goto " + loopL + ";\n"
+            + Indent(indents) + exitL + ":\n";
 
-andExpression ::= relationalExpression | andExpression AND relationalExpression;
+        RESULT = code; 
+    :} ;
 
-relationalExpression ::= arithmeticExpression comparisonOpt ;
+compoundStatement ::= LBRACE statementList:sList RBRACE
+    {:
+        String code = "";
+        for (var s : sList) code += s;
+        RESULT = code;
+    :} ;
 
-arithmeticExpression ::= term | arithmeticExpression addOperator term ;
+assignmentStatement ::= variable:var ASSIGN assignedValue:val SEMICOLON
+    {:
+        if (var == null) ErrorMessage.print("Variable was null");
+        if (val == null) ErrorMessage.print("Assigned value was null");
 
-term ::= factor | term multiplyOperator factor ;
+        if (val.Type().equals("nextInt")) val.SetPlaceType(env, "int");
 
-factor ::= primaryExpression | unaryOperator factor ;
+        String code = var.Code() + val.Code() + Indent(indents+1)
+            + var.Place() + " = " + val.Place() + ";\n";
 
-primaryExpression ::= object | INTEGER | TRUE | FALSE 
-    | LPAREN expression RPAREN ;
+        RESULT = code;
+    :} ;
 
-unaryOperator ::= addOperator | NOT ;
+variable ::= THIS {: RESULT = null; /* Classes not supported */ :} 
+    | ID:id arrayPositionOpt:arrayPosList
+    {:
+        SymbolTableEntry e = env.Entry(id);
+        if (e == null && env.ParentEnv() != null)
+            e = env.ParentEnv().Entry(id);
+        
+        if (e == null)
+            ErrorMessage.print("Undeclared variable: " + id);
+        
+        String varType = e.Type();        
+        String code = "";
+        String place = id;
+        
+        for (var p : arrayPosList)
+        {
+            code += p.Code();
+            place += "[" + p.Place() + "]";
+        }
 
-multiplyOperator ::= STAR | SLASH ;
+        RESULT = new ExpressionCode(code, varType, place);
+    :}
+    | object DOT ID arrayPositionOpt {: RESULT = null; :} ;
 
-addOperator ::= PLUS | MINUS ;
+object ::= variable:varCode {: RESULT = varCode; :}
+    | functionCall:funcCallCode {: RESULT = funcCallCode; :} ;
 
-comparisonOpt ::= relationalOperator arithmeticExpression | ;
+functionCall ::= ID:id LPAREN parameters:paramList RPAREN
+    {:
+        String place = Code.NextTemp();
+        String type = ToCType(env.ParentEnv().Entry(id).Type());
+        env.AddTemp(place, type);
 
-relationalOperator ::= LT | LE | GT | GE | EQ | NE ;
+        String code = "";
+        String call = Indent(indents+1) + place + " = " + id + "(";
+        for (int i = 0; i < paramList.size(); i++)
+        {
+            ExpressionCode p = paramList.get(i);
 
-arrayPositionOpt ::= arrayPosition | ;
+            code += p.Code();
+            call += p.Place();
 
-arrayPosition ::= LBRACKET expression RBRACKET
-    | arrayPosition LBRACKET expression RBRACKET ;
+            if (i < paramList.size() - 1) call += ", ";
+        }
+        code += call + ");\n";
 
-assignedValue ::= expression | NEW ID LPAREN RPAREN 
-    | IN DOT NEXTINT LPAREN RPAREN ;
+        RESULT = new ExpressionCode(code, type, place);
+    :}
+    | object DOT ID LPAREN parameters RPAREN {: RESULT = null; :};
+
+parameters ::= expressionList:params {: RESULT = params; :} 
+    | {: RESULT = new ArrayList<>(); :} ;
+
+expressionList ::= expression:param
+    {:
+        List<ExpressionCode> newParamList = new ArrayList<>();
+        newParamList.add(param);
+        RESULT = newParamList;
+    :}
+    | expressionList:paramList COMMA expression:param
+    {:
+        paramList.add(param);
+        RESULT = paramList;
+    :} ;
+
+expression ::= andExpression:andExp {: RESULT = andExp; :} 
+    | expression:exp OR andExpression:andExp
+    {:
+        if (!exp.Type().equals("boolean")
+                || !andExp.Type().equals("boolean"))
+            ErrorMessage.print("|| requires boolean operands");
+        
+        String temp = Code.NextTemp();
+        // Boolean values just translate to 0 or 1 in plain C
+        env.AddTemp(temp, "int");
+
+        String trueL = Code.NextLabel();
+        String endL = Code.NextLabel();
+
+        String code = exp.Code() + Indent(indents+1)
+            + "if (" + exp.Place() + ") goto " + trueL + ";\n"
+            + andExp.Code() + Indent(indents+1)
+            + "if (" + andExp.Place() + ") goto " + trueL + ";\n"
+            + Indent(indents+1) + temp + " = 0;\n"
+            + Indent(indents+1) + "goto " + endL + ";\n"
+            + Indent(indents) + trueL + ":\n"
+            + Indent(indents+1) + temp + " = 1;\n"
+            + Indent(indents) + endL + ":\n";
+        
+        RESULT = new ExpressionCode(code, "boolean", temp);
+    :} ;
+
+andExpression ::= relationalExpression:relExp {: RESULT = relExp; :}
+    | andExpression:andExp AND relationalExpression:relExp
+    {:
+        if (!andExp.Type().equals("boolean")||!relExp.Type().equals("boolean"))
+            ErrorMessage.print("&& requires boolean operands");
+
+        String temp = Code.NextTemp();
+        env.AddTemp(temp, "int");
+
+        String falseL = Code.NextLabel();
+        String endL = Code.NextLabel();
+
+        String code = andExp.Code() + Indent(indents+1)
+            + "if (!" + andExp.Place() + ") goto " + falseL + ";\n"
+            + relExp.Code() + Indent(indents+1)
+            + "if (!" + relExp.Place() + ") goto " + falseL + ";\n"
+            + Indent(indents+1) + temp + " = 1;\n"
+            + Indent(indents+1) + "goto " + endL + ";\n"
+            + Indent(indents) + falseL + ":\n"
+            + Indent(indents+1) + temp + " = 0;\n"
+            + Indent(indents) + endL + ":\n";
+        
+        RESULT = new ExpressionCode(code, "boolean", temp);
+    :} ;
+
+relationalExpression ::= arithmeticExpression:arithCode comparisonOpt:comp
+    {:
+        if (comp == null) RESULT = arithCode;
+        else
+        {
+            ExpressionCode rhs = comp.RHS();
+            if (!arithCode.Type().equals("int")
+                    || !rhs.Type().equals("int"))
+                ErrorMessage.print("Relational operands must be int");
+            
+            String temp = Code.NextTemp();
+            env.AddTemp(temp, "int");
+
+            String code = arithCode.Code() + rhs.Code()
+                + Indent(indents+1) + temp + " = "
+                + arithCode.Place() + " " 
+                + comp.Op() + " " + rhs.Place() + ";\n";
+            
+            RESULT = new ExpressionCode(code, "boolean", temp);
+        }
+    :} ;
+
+comparisonOpt ::= relationalOperator:op arithmeticExpression:rhs 
+    {: RESULT = new ComparisonCode(op, rhs); :}
+    | {: RESULT = null; :} ;
+
+arithmeticExpression ::= term:termCode {: RESULT = termCode; :}
+    | arithmeticExpression:arithCode addOperator:op term:termCode
+    {:
+        if (!arithCode.Type().equals("int")
+                || !termCode.Type().equals("int"))
+            ErrorMessage.print("Arithmetic operands must be int");
+        
+        String temp = Code.NextTemp();
+        env.AddTemp(temp, ToCType(arithCode.Type()));
+
+        String code = arithCode.Code() + termCode.Code()
+            + Indent(indents+1) + temp + " = "
+            + arithCode.Place() + " " + op + " " + termCode.Place() + ";\n";
+        
+        RESULT = new ExpressionCode(code, arithCode.Type(), temp);
+    :} ;
+
+term ::= factor:factorCode {: RESULT = factorCode; :}
+    | term:termCode multiplyOperator:op factor:factorCode
+    {:
+        if (!termCode.Type().equals("int")
+                || !factorCode.Type().equals("int"))
+            ErrorMessage.print("Arithmetic operands must be int");
+        
+        String temp = Code.NextTemp();
+        env.AddTemp(temp, ToCType(termCode.Type()));
+
+        String code = termCode.Code() + factorCode.Code()
+            + Indent(indents+1) + temp + " = " 
+            + termCode.Place() + " " + op + " " + factorCode.Place() + ";\n";
+        
+        RESULT = new ExpressionCode(code, termCode.Type(), temp);
+    :} ;
+
+factor ::= primaryExpression:expCode {: RESULT = expCode; :}
+    | unaryOperator:op factor:factorCode
+    {:
+        if (op.equals("!"))
+        {
+            if (!factorCode.Type().equals("boolean"))
+                ErrorMessage.print("! Unary operand must be a boolean");
+        }
+        else
+        {
+            if (!factorCode.Type().equals("int"))
+                ErrorMessage.print("+/- Unary operand must be int");
+        }
+
+        String temp = Code.NextTemp();
+        String resultType = op.equals("!") ? "boolean" : "int";
+
+        env.AddTemp(temp, ToCType(resultType));
+
+        String code = factorCode.Code() 
+            + Indent(indents+1) + temp
+            + " = " + op + factorCode.Place() + ";\n";
+        
+        RESULT = new ExpressionCode(code, resultType, temp);
+    :} ;
+
+primaryExpression ::= object:objExpCode {: RESULT = objExpCode; :} 
+    | INTEGER:intVal {: RESULT = new ExpressionCode("", "int", intVal); :} 
+    | TRUE {: RESULT = new ExpressionCode("", "boolean", "1"); :} 
+    | FALSE {: RESULT = new ExpressionCode("", "boolean", "0"); :} 
+    | LPAREN expression:expCode RPAREN {: RESULT = expCode; :} ;
+
+unaryOperator ::= addOperator:opp {: RESULT = opp; :} | NOT {: RESULT = "!"; :};
+
+multiplyOperator ::= STAR {: RESULT = "*"; :} | SLASH {: RESULT = "/"; :};
+
+addOperator ::= PLUS {: RESULT = "+"; :} | MINUS {: RESULT = "-"; :};
+
+relationalOperator ::= 
+    LT {: RESULT = "<"; :} | LE {: RESULT = "<="; :}
+    | GT {: RESULT = ">"; :} | GE {: RESULT = ">="; :} 
+    | EQ {: RESULT = "=="; :} | NE {: RESULT = "!="; :} ;
+
+arrayPositionOpt ::= arrayPosition:posList {: RESULT = posList; :} 
+    | {: RESULT = new ArrayList<>(); :} ;
+
+arrayPosition ::= LBRACKET expression:exp RBRACKET
+    {:
+        List<ExpressionCode> newPosList = new ArrayList<>();
+        newPosList.add(exp);
+        RESULT = newPosList;
+    :}
+    | arrayPosition:posList LBRACKET expression:exp RBRACKET
+    {:
+        posList.add(exp);
+        RESULT = posList;
+    :} ;
+
+assignedValue ::= expression:expCode {: RESULT = expCode; :} 
+    | NEW ID LPAREN RPAREN {: RESULT = null; /* No class support */ :} 
+    | IN DOT NEXTINT LPAREN RPAREN
+    {:
+        String place = Code.NextTemp();
+        String code = Indent(indents+1) + "scanf(\"%d\", &" + place + ");\n";
+
+        RESULT = new ExpressionCode(code, "nextInt", place);
+    :} ;
 
 printStatement ::=
-    SYSTEM DOT OUT DOT PRINTLN LPAREN expression RPAREN SEMICOLON ;
+    SYSTEM DOT OUT DOT PRINTLN LPAREN expression:exp RPAREN SEMICOLON
+    {:
+        // Only %d because all examples only print ints
+        String code = exp.Code() + Indent(indents+1) 
+            + "printf(\"%d\\n\", " + exp.Place() + ");\n";
 
-returnStatementOpt ::= RETURN expression SEMICOLON | ;
+        RESULT = code;
+    :} ;
+
+returnStatementOpt ::= RETURN expression:exp SEMICOLON
+    {:
+        String code = exp.Code() + Indent(indents+1)
+            + "return " + exp.Place() + ";\n";
+        
+        RESULT = code;
+    :}
+    | {: RESULT = ""; :} ;

@@ -5,6 +5,7 @@ public class SymbolTable {
     private SymbolTable parentEnv;
     
     private TreeMap<String, SymbolTableEntry> table;
+    private HashMap<String, String> temps; // name, type
 
     private static int maxlen = 2;
 
@@ -12,12 +13,14 @@ public class SymbolTable {
         this.id = "global";
         this.parentEnv = null;
         table = new TreeMap<>();
+        temps = new HashMap<>();
     }
 
     public SymbolTable(String id, SymbolTable parentEnv) {
         this.id = id;
         this.parentEnv = parentEnv;
         table = new TreeMap<>();
+        temps = new HashMap<>();
     }
 
 
@@ -179,5 +182,21 @@ public class SymbolTable {
             SymbolTableEntry entry = pair.getValue();
             entry.Env().PrintEnv(nestedScopeName);
         }
+    }
+
+    public void AddTemp(String name, String type) { temps.put(name, type); }
+    
+    public List<String> Temps() {
+        // Convert pairs to strings
+        List<String> t = new ArrayList<>();
+
+        for (var temp : temps.entrySet())
+        {
+            String name = temp.getKey();
+            String type = temp.getValue();
+            t.add(type + " " + name + ";\n");
+        }
+
+        return t;
     }
 }

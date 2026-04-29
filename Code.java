@@ -15,13 +15,7 @@ public class Code {
 
     public String Generate(String blockName) { return code + "//"; }
 
-    public static String Indent(int indents) {
-        if (indents < 0) return "";
-        return "    ".repeat(indents);
-    }
-
-    public static void ResetLabels() { labelIdx = 0; }
-    public static void ResetTemps() { tempIdx = 0; }
+    public static void ResetCounts() { labelIdx = 0; tempIdx = 0; }
 
     public static String NextLabel() { return "_L" + labelIdx++; }
     public static String NextTemp() { return "_T" + tempIdx++; }    

@@ -4,6 +4,7 @@ public class FunctionEntry extends SymbolTableEntry {
     Boolean isStatic;
     String type;
     List<String> argTypes;
+    HashMap<String, String> params; // 
 
     public FunctionEntry(String id, Boolean isStatic, String type,
                                 SymbolTable env) {
