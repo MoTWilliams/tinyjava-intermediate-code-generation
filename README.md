@@ -30,6 +30,8 @@ This program implements a compiler for TinyJava, a subset of the Java programmin
 ***Run:*** Ensure the test file is in the project directory, then use `make generate_code FILE=fileName`, where `fileName` is the name of the test file, without any extension or file path.  
 ***Clean:*** `make clean`
 
+Intermediate code file will be generated in the current directory. Compile it with `gcc fileName.c`, and run it with `./a.out`
+
 ### Notes:
 
 - ***Supported:***
