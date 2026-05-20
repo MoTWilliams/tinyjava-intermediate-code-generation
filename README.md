@@ -1,11 +1,6 @@
 # TinyJava Compiler: Intermediate Code Generation
 
-Morgan Williams  
-CSCE 4650.001
-
-### Description:
-
-This program implements a compiler for TinyJava, a subset of the Java programming language. The compiler reads the TinyJava code from a file, builds a symbol table, performs basic type checking, and builds intermediate three-address code in the form of a C file that can be compiled and executed.
+Implements a compiler for TinyJava, a subset of the Java programming language. The compiler reads the TinyJava code from a file, builds a symbol table, performs basic type checking, and builds intermediate three-address code in the form of a C file that can be compiled and executed.
 
 ### Files:
 
